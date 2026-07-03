@@ -1,7 +1,7 @@
 import requests, random
 
 MOOD_SEEDS = {
-    'calm':        ['Ed Sheeran Perfect', 'Norah Jones Come Away With Me', 'BTS Life Goes On', 'Jungkook Stay Alive'],
+    'calm':        ['Ed Sheeran Perfect', 'Norah Jones Come Away With Me', 'Bon Iver Skinny Love', 'Jungkook Stay Alive'],
     'peaceful':    ['Norah Jones Come Away With Me', 'Jack Johnson Better Together', 'Iron & Wine Flightless Bird'],
     'dreamy':      ['Lana Del Rey Video Games', 'Beach House Space Song', 'Cigarettes After Sex Apocalypse',
                      'a-ha Take On Me', 'Damiano David Tangerine', 'Damiano David Cinnamon'],
@@ -18,25 +18,25 @@ MOOD_SEEDS = {
     'nostalgic':   ['Billy Joel Piano Man', 'a-ha Take On Me', 'The Turtles Happy Together', 'Modern Talking Brother Louie'],
     'dark':        ['Billie Eilish Bad Guy', 'Yungblud Zombie', 'Michael Jackson Thriller'],
     'intense':     ['Imagine Dragons Believer', 'Yungblud Zombie', 'Linkin Park Numb'],
-    'adventurous': ['Young the Giant Strings', 'Young the Giant Garands', 'Young the Giant St. Walker',
-                     'Mumford and Sons Tompkins Square Park', 'Stephen Sanchez Hold Her While You Can'],
-    'mysterious':  ['Damiano David Mysterious Girl', 'a-ha Take On Me', 'Damiano David First Time', 'Michael Jackson Bad'
+    'adventurous': ['Young the Giant Strings', 'Young the Giant Garlands', 'Young the Giant Saint Walker',
+                     'Mumford and Sons Tompkins Square Park', 'Stephen Sanchez Hold On While You Can'],
+     'mysterious':  ['Damiano David Mysterious Girl', 'a-ha Take On Me', 'Damiano David First Time', 'Michael Jackson Bad'
                      'Michael Jackson Human Nature', 'Radiohead Everything In Its Right Place', 'Walk The Moon Shut Up and Dance'],
 }
 
+
 BAD_WORDS = ['instrumental', 'karaoke', 'backing track', 'made famous by', 'tribute',
-             '8-bit', '16-bit', 'remix', 'cover', 'lullaby', 'nightcore']
+             '8-bit', '16-bit', 'remix', 'cover', 'lullaby', 'nightcore', 'live', 'version']
 
-def _is_junk(t, query):
-    title  = t['title'].lower()
-    artist = t['artist']['name'].lower()
-    if any(bw in title for bw in BAD_WORDS):
-        return True
-    if artist == query.lower():
-        return True
-    return False
+def _is_junk(t):
+    title = t['title'].lower()
+    return any(bw in title for bw in BAD_WORDS)
 
-def get_tracks(mood, mood2=None, n=6):
+def _norm(title):
+    return ''.join(c for c in title.lower() if c.isalnum())
+
+def get_tracks(mood, mood2=None, n=6, exclude=None):
+    exclude = exclude or set()
     m1 = (mood or '').lower()
     m2 = (mood2 or '').lower()
 
@@ -46,36 +46,46 @@ def get_tracks(mood, mood2=None, n=6):
 
     try:
         all_results = []
-        for seed in random.sample(seeds, min(3, len(seeds))):
+        for seed in random.sample(seeds, min(5, len(seeds))):
             r = requests.get(f"https://api.deezer.com/search?q={seed}&order=RANKING&limit=15", timeout=5).json()
             all_results += r.get('data', [])
 
-        clean = [t for t in all_results if not _is_junk(t, '')]
+        clean = [t for t in all_results if not _is_junk(t)]
+        random.shuffle(clean)
 
         seen_titles, artist_count, final = set(), {}, []
-        random.shuffle(clean)
+
         for t in clean:
-            norm_title = ''.join(c for c in t['title'].lower() if c.isalnum())
-            artist = t['artist']['name']
-
-            if norm_title in seen_titles:
+            key = (_norm(t['title']), t['artist']['name'])
+            if key in exclude:
                 continue
-            if artist_count.get(artist, 0) >= 2:
+            if key[0] in seen_titles:
                 continue
-
-            seen_titles.add(norm_title)
-            artist_count[artist] = artist_count.get(artist, 0) + 1
+            if artist_count.get(t['artist']['name'], 0) >= 2:
+                continue
+            seen_titles.add(key[0])
+            artist_count[t['artist']['name']] = artist_count.get(t['artist']['name'], 0) + 1
             final.append(t)
-
             if len(final) >= n:
                 break
+
+        if len(final) < n:
+            for t in clean:
+                key = (_norm(t['title']), t['artist']['name'])
+                if key[0] in seen_titles:
+                    continue
+                seen_titles.add(key[0])
+                final.append(t)
+                if len(final) >= n:
+                    break
 
         if not final:
             raise ValueError("empty")
 
         return [{'title':  t['title'][:27] + '...' if len(t['title']) > 30 else t['title'],
                  'artist': t['artist']['name'],
-                 'preview': t['preview']} for t in final]
+                 'preview': t['preview'],
+                 '_key': (_norm(t['title']), t['artist']['name'])} for t in final]
     except Exception:
-        return [{'title': 'Space Song', 'artist': 'Beach House', 'preview': ''},
-                {'title': 'After Dark',  'artist': 'Mr.Kitty',    'preview': ''}]
+        return [{'title': 'Space Song', 'artist': 'Beach House', 'preview': '', '_key': ('spacesong','Beach House')},
+                {'title': 'After Dark',  'artist': 'Mr.Kitty',    'preview': '', '_key': ('afterdark','Mr.Kitty')}]

@@ -12,7 +12,7 @@ from gestures    import detect, tip
 from canvas      import Canvas
 from interpreter import interpret
 from music       import get_tracks
-from text_render import put_text, text_width
+from text_render import put_text
 
 W, H   = 1280, 720
 CW     = W // 2
@@ -24,6 +24,7 @@ PLAYLIST  = 'playlist'
 
 PALM_HOLD = 1.5
 MISS_THR  = 4
+
 FONT_PATH = "fonts/Basic-Regular.ttf"
 
 MOOD_COLORS = {
@@ -127,6 +128,7 @@ def main():
     state  = DRAWING
     result, tracks = None, []
     sel, last_sel  = 0, -1
+    shown_songs = set()
 
     palm_t       = None
     interpreting = False
@@ -211,9 +213,10 @@ def main():
             state = 'processing'
             snap = canvas.snapshot()
             def run(img):
-                nonlocal result, tracks, sel, last_sel, state, interpreting
+                nonlocal result, tracks, sel, last_sel, state, interpreting, shown_songs
                 result        = interpret(img)
-                tracks        = get_tracks(result.get('mood',''), result.get('mood2',''))
+                tracks        = get_tracks(result.get('mood',''), result.get('mood2',''), exclude=shown_songs)
+                shown_songs.update(t['_key'] for t in tracks)
                 sel, last_sel = 0, -1
                 state         = PLAYLIST
                 interpreting  = False
