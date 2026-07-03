@@ -1,79 +1,64 @@
 import requests, random
 
-MOOD_TERMS = {
-    'calm':        ['acoustic', 'chill pop', 'soft indie'],
-    'peaceful':    ['soft indie', 'gentle folk', 'acoustic'],
-    'dreamy':      ['dream pop', 'ethereal pop', 'indie dream'],
-    'romantic':    ['love ballad', 'soul', 'r&b love'],
-    'melancholic': ['sad indie', 'melancholy pop', 'emotional ballad'],
-    'energetic':   ['upbeat pop', 'dance pop', 'high energy pop'],
-    'happy':       ['feel good pop', 'summer pop', 'happy indie'],
-    'nostalgic':   ['80s pop', 'retro pop', 'throwback hits'],
-    'dark':        ['dark pop', 'moody alternative', 'gothic rock'],
-    'intense':     ['powerful rock', 'epic alternative', 'cinematic rock'],
-    'adventurous': ['folk rock', 'indie rock', 'anthemic rock'],
-    'mysterious':  ['trip hop', 'moody alternative', 'dark pop'],
+# Real, well-known songs as search seeds per mood — far more reliable than generic genre phrases
+MOOD_SEEDS = {
+    'calm':        ['Ed Sheeran Perfect', 'Norah Jones Come Away With Me', 'Bon Iver Skinny Love'],
+    'peaceful':    ['Norah Jones Come Away With Me', 'Jack Johnson Better Together', 'Iron & Wine Flightless Bird'],
+    'dreamy':      ['Lana Del Rey Video Games', 'Beach House Space Song', 'Cigarettes After Sex Apocalypse'],
+    'romantic':    ['Ed Sheeran Perfect', 'John Legend All of Me', 'Adele Make You Feel My Love'],
+    'melancholic': ['Adele Someone Like You', 'Sam Smith Stay With Me', 'Billie Eilish Everything I Wanted'],
+    'energetic':   ['Dua Lipa Levitating', 'The Weeknd Blinding Lights', 'Bruno Mars Uptown Funk'],
+    'happy':       ['Pharrell Williams Happy', 'Justin Timberlake Cant Stop the Feeling', 'Katrina and the Waves Walking on Sunshine'],
+    'nostalgic':   ['a-ha Take On Me', 'Journey Dont Stop Believin', 'Fleetwood Mac Dreams'],
+    'dark':        ['Billie Eilish Bad Guy', 'Lorde Royals', 'The Weeknd Blinding Lights'],
+    'intense':     ['Imagine Dragons Believer', 'Linkin Park Numb', 'Muse Uprising'],
+    'adventurous': ['Imagine Dragons Radioactive', 'Fun Some Nights', 'Coldplay Adventure of a Lifetime'],
+    'mysterious':  ['Billie Eilish Bury a Friend', 'Massive Attack Teardrop', 'Radiohead Everything In Its Right Place'],
 }
 
-BAD_WORDS = ['instrumental', 'karaoke', 'backing track', 'made famous by']
+BAD_WORDS = ['instrumental', 'karaoke', 'backing track', 'made famous by', 'tribute']
 
 def _is_junk(t, query):
     title  = t['title'].lower()
     artist = t['artist']['name'].lower()
-    q      = query.lower()
-
     if any(bw in title for bw in BAD_WORDS):
         return True
-    # generic library-track pattern: artist name IS the genre/search term
-    if artist == q or artist in q or q in artist:
-        return True
-    # title is just the genre word plus a number, e.g. "Trip Hop 19"
-    stripped = ''.join(c for c in title if not c.isdigit()).strip()
-    if stripped == q:
+    if artist == query.lower():
         return True
     return False
-
-def _search(query, n):
-    url = f"https://api.deezer.com/search?q={query}&order=RANKING&limit=25"
-    r = requests.get(url, timeout=5).json()
-    results = r.get('data', [])
-    clean = [t for t in results if not _is_junk(t, query)]
-    random.shuffle(clean)
-    return clean
 
 def get_tracks(mood, mood2=None, n=6):
     m1 = (mood or '').lower()
     m2 = (mood2 or '').lower()
 
-    pool = MOOD_TERMS.get(m1, ['pop'])
-    if m2 and m2 != m1 and m2 in MOOD_TERMS:
-        pool = pool + MOOD_TERMS[m2]
+    seeds = MOOD_SEEDS.get(m1, ['Ed Sheeran Perfect'])
+    if m2 and m2 != m1 and m2 in MOOD_SEEDS:
+        seeds = seeds + MOOD_SEEDS[m2]
 
     try:
-        term = random.choice(pool)
-        picks = _search(term, n)
+        all_results = []
+        # search 2 different seed songs, gather results from both
+        for seed in random.sample(seeds, min(2, len(seeds))):
+            r = requests.get(f"https://api.deezer.com/search?q={seed}&order=RANKING&limit=15", timeout=5).json()
+            all_results += r.get('data', [])
 
-        if len(picks) < n:
-            term2 = random.choice(pool)
-            picks += _search(term2, n)
-
-        if len(picks) < n:
-            picks += _search(f"{m1 or 'pop'} songs", n)
+        clean = [t for t in all_results if not _is_junk(t, '')]
 
         seen, final = set(), []
-        for t in picks:
+        for t in clean:
             key = (t['title'], t['artist']['name'])
             if key not in seen:
                 seen.add(key)
                 final.append(t)
 
-        if not final:
+        random.shuffle(final)
+        picks = final[:n]
+        if not picks:
             raise ValueError("empty")
 
-        final = final[:n]
         return [{'title':  t['title'][:27] + '...' if len(t['title']) > 30 else t['title'],
                  'artist': t['artist']['name'],
-                 'preview': t['preview']} for t in final]
+                 'preview': t['preview']} for t in picks]
     except Exception:
         return [{'title': 'Space Song', 'artist': 'Beach House', 'preview': ''},
                 {'title': 'After Dark',  'artist': 'Mr.Kitty',    'preview': ''}]
