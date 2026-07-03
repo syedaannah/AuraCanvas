@@ -16,7 +16,7 @@ PROMPT = """Hand-drawn sketch, white lines on black.
 Look at the whole composition — shapes, motion, density, and how elements relate — not just isolated symbols. The same object can suggest different moods depending on context.
 
 Pick a PRIMARY mood and, if the sketch feels like a blend, a SECONDARY mood, from:
-calm, dreamy, romantic, melancholic, energetic, dark, happy, peaceful, nostalgic, intense, adventurous, mysterious
+calm, dreamy, romantic, melancholic, energetic, dark, happy, peaceful, nostalgic, intense, adventurous, mysterious, heartbreak
 
 If the sketch clearly leans one way, set secondary the same as primary.
 

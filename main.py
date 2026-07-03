@@ -12,6 +12,7 @@ from gestures    import detect, tip
 from canvas      import Canvas
 from interpreter import interpret
 from music       import get_tracks
+from text_render import put_text, text_width
 
 W, H   = 1280, 720
 CW     = W // 2
@@ -23,6 +24,26 @@ PLAYLIST  = 'playlist'
 
 PALM_HOLD = 1.5
 MISS_THR  = 4
+FONT_PATH = "fonts/Basic-Regular.ttf"
+
+MOOD_COLORS = {
+    'calm':        (180, 140, 90),
+    'peaceful':    (170, 150, 100),
+    'dreamy':      (200, 120, 180),
+    'romantic':    (100, 90, 220),
+    'melancholic': (150, 100, 80),
+    'heartbreak':  (100, 70, 140),
+    'energetic':   (60, 160, 240),
+    'happy':       (60, 200, 230),
+    'nostalgic':   (110, 150, 200),
+    'dark':        (90, 60, 110),
+    'intense':     (50, 60, 200),
+    'adventurous': (60, 180, 130),
+    'mysterious':  (160, 90, 160),
+}
+
+def get_mood_color(mood):
+    return MOOD_COLORS.get((mood or '').lower(), (150, 150, 150))
 
 pygame.mixer.init()
 
@@ -41,51 +62,55 @@ def stop():
     try: pygame.mixer.music.stop()
     except Exception: pass
 
+def draw_icon(panel, cx, cy, playing, color):
+    if playing:
+        for i, h in enumerate([10, 16, 12]):
+            x = cx - 8 + i * 8
+            cv2.rectangle(panel, (x, cy + h//2), (x + 5, cy - h//2), color, -1)
+    else:
+        pts = np.array([[cx-7, cy-9], [cx-7, cy+9], [cx+9, cy]], np.int32)
+        cv2.polylines(panel, [pts], True, color, 2)
+
 def draw_panel(panel, state, result, tracks, sel):
-    panel[:] = (15, 15, 18)
+    mood = result['mood'] if result else None
+    accent = get_mood_color(mood)
+    bg = tuple(int(c * 0.18) for c in accent)
+    panel[:] = bg
 
     if state == DRAWING:
-        cv2.putText(panel, "Draw, then open palm",
-                    (40, H//2), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (60,60,60), 2)
+        put_text(panel, "Draw, then open palm", (40, H//2), FONT_PATH, 28, (90,90,90))
         return
 
     if state in (THINKING, 'processing'):
         dots = "." * (int(time.time() * 2) % 4)
-        cv2.putText(panel, f"Reading sketch{dots}",
-                    (40, H//2), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (180,180,190), 2)
+        put_text(panel, f"Reading sketch{dots}", (40, H//2), FONT_PATH, 32, (200,200,200))
         return
 
     if state == PLAYLIST and result:
-        cv2.putText(panel, result['mood'].capitalize(),
-                    (40, 65), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255,255,255), 2)
-        cv2.putText(panel, result['label'],
-                    (40, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (120,120,120), 1)
-        cv2.line(panel, (40, 118), (PW-40, 118), (40,40,48), 1)
+        put_text(panel, result['mood'].capitalize(), (40, 40), FONT_PATH, 56, (255,255,255))
+        put_text(panel, result['label'], (40, 100), FONT_PATH, 20, (200,200,200))
+        cv2.line(panel, (40, 130), (PW-40, 130), accent, 2)
 
-        y = 145
+        put_text(panel, "TITLE", (78, 148), FONT_PATH, 16, accent)
+        put_text(panel, "ARTIST", (PW-48, 148), FONT_PATH, 16, accent, anchor="ra")
+
+        y = 175
+        row_h = 68
         for i, t in enumerate(tracks):
-            selected = (i == sel)
-            row_h    = 88 if selected else 58
+            playing = (i == sel)
 
-            if selected:
-                cv2.rectangle(panel, (28, y), (PW-28, y+row_h), (32,32,40), -1)
-                cv2.rectangle(panel, (28, y), (32, y+row_h), (180,160,255), -1)
-                cv2.putText(panel, t['title'],  (48, y+row_h//2-8),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.72, (180,160,255), 2)
-                cv2.putText(panel, t['artist'], (48, y+row_h//2+20),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200,200,200), 1)
-                cv2.putText(panel, "▶ playing preview", (48, y+row_h//2+38),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.38, (100,100,120), 1)
-            else:
-                cv2.putText(panel, t['title'],  (48, y+row_h//2-6),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (130,130,130), 1)
-                cv2.putText(panel, t['artist'], (48, y+row_h//2+18),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.44, (70,70,70), 1)
+            if playing:
+                cv2.rectangle(panel, (28, y), (PW-28, y+row_h), tuple(int(c*0.4) for c in accent), -1)
 
-            y += row_h + 5
+            draw_icon(panel, 55, y + row_h//2, playing, accent if playing else (150,150,150))
 
-        cv2.putText(panel, "index + middle to navigate",
-                    (40, H-22), cv2.FONT_HERSHEY_SIMPLEX, 0.38, (50,50,55), 1)
+            title_color = (255,255,255) if playing else (170,170,170)
+            put_text(panel, t['title'], (78, y+row_h//2-16), FONT_PATH, 22, title_color)
+            put_text(panel, t['artist'], (PW-48, y+row_h//2+10), FONT_PATH, 16, (140,140,140), anchor="ra")
+
+            y += row_h + 6
+
+        put_text(panel, "index + middle to navigate", (40, H-30), FONT_PATH, 14, (100,100,100))
 
 def main():
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
@@ -183,7 +208,7 @@ def main():
 
         if state == THINKING and not interpreting:
             interpreting = True
-            state = 'processing'   # immediately leave THINKING so this block can't fire again
+            state = 'processing'
             snap = canvas.snapshot()
             def run(img):
                 nonlocal result, tracks, sel, last_sel, state, interpreting
