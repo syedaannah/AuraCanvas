@@ -1,4 +1,4 @@
-# AuraCanvas — AI Music Canvas
+# AuraCanvas - AI Music Canvas
 
 Draw with your hand in the air, and get a playlist that matches the mood of your sketch. Uses hand tracking to let you draw without touching anything, Google Gemini to figure out the mood of your drawing, and Deezer to build a matching playlist.
 
