@@ -3,7 +3,6 @@ import numpy as np
 import time
 import threading
 import io
-import os
 import requests
 import pygame
 
