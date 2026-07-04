@@ -8,7 +8,11 @@ MOOD_SEEDS = {
     'romantic':    ['Michael Jackson Another Part of Me', 'Harry Styles Sign of the Times', 'Jimin Be Mine',
                      'Bryan Adams Please Forgive Me', 'Bon Jovi Always', 'Righteous Brothers Unchained Melody',
                      'Frankie Valli Cant Take My Eyes Off You', 'Berlin Take My Breath Away', 'Kiss I Was Made For Lovin You'],
-    'melancholic': ['Adele Someone Like You', 'Sam Smith Stay With Me', 'Billie Eilish Everything I Wanted'],
+    'melancholic': ['Adele Someone Like You', 'Sam Smith Stay With Me',
+                    'Billie Eilish Everything I Wanted', 'Lewis Capaldi Someone You Loved',
+                    'James Arthur Say You Wont Let Go', 'Passenger Let Her Go',
+                    'Coldplay The Scientist', 'Ed Sheeran Happier',
+                    'Taylor Swift All Too Well'],
     'heartbreak':  ['Damiano David Voices', 'Damiano David Born With a Broken Heart', 'Brooks and Dunn My Next Broken Heart',
                      'Brooks and Dunn Gone', 'ABBA The Winner Takes It All', 'Billy Joel Vienna', 'ABBA Angel Eyes'],
     'energetic':   ['Dua Lipa Levitating', 'The Weeknd Blinding Lights', 'ABBA Gimme Gimme Gimme',
@@ -20,12 +24,12 @@ MOOD_SEEDS = {
     'intense':     ['Imagine Dragons Believer', 'Yungblud Zombie', 'Linkin Park Numb'],
     'adventurous': ['Young the Giant Strings', 'Young the Giant Garlands', 'Young the Giant Saint Walker',
                      'Mumford and Sons Tompkins Square Park', 'Stephen Sanchez Hold On While You Can'],
-     'mysterious':  ['Damiano David Mysterious Girl', 'a-ha Take On Me', 'Damiano David First Time', 'Michael Jackson Bad'
+     'mysterious':  ['Damiano David Mysterious Girl', 'a-ha Take On Me', 'Damiano David First Time', 'Michael Jackson Bad',
                      'Michael Jackson Human Nature', 'Radiohead Everything In Its Right Place', 'Walk The Moon Shut Up and Dance'],
 }
 
 
-BAD_WORDS = ['instrumental', 'karaoke', 'backing track', 'made famous by', 'tribute',
+BAD_WORDS = ['instrumental', 'karaoke', 'backing track', 'made famous by', 'tribute', 'acoustic',
              '8-bit', '16-bit', 'remix', 'cover', 'lullaby', 'nightcore', 'live', 'version']
 
 def _is_junk(t):

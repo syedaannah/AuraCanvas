@@ -159,6 +159,8 @@ def main():
                 palm_t = fist_count = draw_miss = 0
 
             elif gesture == 'fist':
+                if fist_count == 0:
+                    stop()  # stop immediately on first fist frame
                 fist_count += 1
                 canvas.end()
                 draw_miss = 0
@@ -167,7 +169,6 @@ def main():
                     state  = DRAWING
                     result = None
                     tracks = []
-                    stop()
                     fist_count = 0
 
             else:
@@ -215,7 +216,7 @@ def main():
             def run(img):
                 nonlocal result, tracks, sel, last_sel, state, interpreting, shown_songs
                 result        = interpret(img)
-                tracks        = get_tracks(result.get('mood',''), result.get('mood2',''), exclude=shown_songs)
+                tracks = get_tracks(result.get('mood', ''), result.get('mood2', ''), exclude=shown_songs)
                 shown_songs.update(t['_key'] for t in tracks)
                 sel, last_sel = 0, -1
                 state         = PLAYLIST

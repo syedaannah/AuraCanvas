@@ -21,7 +21,7 @@ calm, dreamy, romantic, melancholic, energetic, dark, happy, peaceful, nostalgic
 If the sketch clearly leans one way, set secondary the same as primary.
 
 Reply ONLY with JSON, no extra text:
-{"label": "2-4 word description", "mood": "primary mood", "mood2": "secondary mood", "tags": ["tag1", "tag2", "tag3"]}"""
+{"label": "2-4 word description", "mood": "strongest mood word", "mood2": "second mood word or same as mood if only one", "tags": ["tag1", "tag2", "tag3"]}"""
 
 def interpret(canvas_image, retries=2):
     small = cv2.resize(canvas_image, (320, 360))
